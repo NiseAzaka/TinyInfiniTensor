@@ -27,7 +27,14 @@ namespace infini {
     // TODO：可能需要设计一个数据结构来存储free block，以便于管理和合并
     // HINT: 可以使用一个 map 来存储 free block，key 为 block 的起始/结尾地址，value 为 block 的大小
     // =================================== 作业 ===================================
-
+    // 踩坑（详见 docs/作业完成说明.md 作业一）：
+    //   - alloc/free 只是"模拟"分配（函数开头有 IT_ASSERT(ptr == nullptr)），
+    //     真实内存必须在全部规划完成之后通过 getPtr() 一次性分配；
+    //   - alloc 需要支持"末尾空闲块扩展"（地址最大的空闲块延伸到 peak 时，
+    //     可以从该块起始地址继续向外扩展），否则 test_allocator 的
+    //     testAllocWithEndFreeBlock 无法通过；
+    //   - free 时记得与前一块、后一块做合并（先向前、再向后），避免碎片。
+    std::map<size_t, size_t> freeBlocks;
   public:
     Allocator(Runtime runtime);
 

@@ -1,5 +1,7 @@
 #include "utils/operator_utils.h"
 #include "core/runtime.h"
+#include "core/tensor.h"
+#include <algorithm>
 
 namespace infini {
 
@@ -9,8 +11,24 @@ Shape infer_broadcast(const Shape &A, const Shape &B) {
     // TODO：对 A 和 B 进行双向广播，返回广播后的形状。
     // REF: https://github.com/onnx/onnx/blob/main/docs/Broadcasting.md
     // =================================== 作业 ===================================
-    
-    return {};
+    // - 从后往前对齐两个 shape（可用反向迭代器 rbegin/rend），
+    //   较短的 shape 缺失的维度视为 1；
+    // - 每维规则：两值相等、或其一为 1 时可广播，结果取较大者；
+    //   否则断言失败；
+    // - 因为是从后往前生成的，记得 std::reverse 回来
+    //   （需要 #include <algorithm>）。
+    Shape output_shape;
+    auto itA = A.rbegin();
+    auto itB = B.rbegin();
+    while(itA != A.rend() || itB != B.rend()) {
+        int dimA = (itA != A.rend()) ? *itA++ : 1; 
+        int dimB = (itB != B.rend()) ? *itB++ : 1; 
+        IT_ASSERT(dimA == dimB || dimA == 1 || dimB == 1,
+            "Broadcast failed: " + vecToString(A) + " vs " + vecToString(B));
+        output_shape.emplace_back(std::max(dimA, dimB));
+    }
+    std::reverse(output_shape.begin(), output_shape.end());
+    return output_shape;
 }
 
 int get_real_axis(const int &axis, const int &rank) {
